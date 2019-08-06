@@ -28,7 +28,5 @@ setup(
     license=u'GNU GPLv3',
     packages=find_packages(exclude=[u'tests']),
     include_package_data=True,
-    zip_safe=False,
-    install_requires=[],
-    entry_points=u'',
+    install_requires=[]
     )
