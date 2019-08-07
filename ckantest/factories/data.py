@@ -56,7 +56,8 @@ class DataFactory(object):
                 }, {
                 u'id': u'scientific_name',
                 u'type': u'text'
-                }]
+                }],
+            u'force': True
             }
         if records:
             data[u'records'] = records
