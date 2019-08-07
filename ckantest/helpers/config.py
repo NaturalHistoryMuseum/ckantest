@@ -4,8 +4,9 @@
 # This file is part of ckantest
 # Created by the Natural History Museum in London, UK
 
-from ckan.plugins import toolkit, interfaces
 from ckan import plugins
+from ckan.plugins import toolkit
+from .plugins import load_datastore
 
 
 class Configurer(object):
@@ -79,7 +80,10 @@ class Configurer(object):
 
     def load_plugins(self, *plugin_names):
         for p in plugin_names:
-            plugins.load(p)
+            if p == 'datastore':
+                p = load_datastore()
+            else:
+                plugins.load(p)
             plugin = plugins.get_plugin(p)
             if not hasattr(plugin, u'get_blueprint'):
                 continue

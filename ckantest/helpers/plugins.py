@@ -4,9 +4,11 @@ from ckan import plugins
 def load_datastore():
     try:
         plugins.load(u'datastore')
+        return u'datastore'
     except:
         plugins.unload(u'datastore')
         plugins.load(u'versioned_datastore')
+        return u'versioned_datastore'
 
 
 def unload_datastore():
