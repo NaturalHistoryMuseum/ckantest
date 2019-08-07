@@ -4,7 +4,8 @@
 # This file is part of ckantest
 # Created by the Natural History Museum in London, UK
 
-from ckan.plugins import toolkit
+from ckan.plugins import toolkit, interfaces
+from ckan import plugins
 
 
 class Configurer(object):
@@ -13,7 +14,8 @@ class Configurer(object):
     manipulating the current config within tests.
     '''
 
-    def __init__(self, debug=True):
+    def __init__(self, app, debug=True):
+        self.app = app
         self.debug = debug
         self.stored = None
         self._changed = {}
@@ -78,3 +80,12 @@ class Configurer(object):
         else:
             del toolkit.config[key]
         del self._changed[key]
+
+    def load_plugins(self, *plugin_names):
+        for p in plugin_names:
+            plugins.load(p)
+            plugin = plugins.get_plugin(p)
+            if not hasattr(plugin, u'get_blueprint'):
+                continue
+            for blueprint in plugin.get_blueprint():
+                self.app.flask_app.register_extension_blueprint(blueprint)
