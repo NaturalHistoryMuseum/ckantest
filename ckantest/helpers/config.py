@@ -38,13 +38,9 @@ class Configurer(object):
 
     def reset(self):
         '''
-        Overwrites the current config with the stored config,
-        then sets the debug value to ensure that this is consistent.
+        Overwrites the current config with the stored config.
         '''
         toolkit.config.update(self.stored)
-        self.update({
-            u'ckanext.twitter.debug': self.debug
-            })
 
     def update(self, new_values):
         '''
