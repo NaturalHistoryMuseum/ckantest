@@ -28,5 +28,7 @@ setup(
     license=u'GNU GPLv3',
     packages=find_packages(exclude=[u'tests']),
     include_package_data=True,
-    install_requires=[]
+    install_requires=['ckan',
+                      'mock',
+                      'beaker']
     )

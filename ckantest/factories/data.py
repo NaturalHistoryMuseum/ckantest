@@ -6,6 +6,7 @@
 
 from ckan.plugins import toolkit
 from ckan.tests import factories, helpers
+from ckantest.helpers import mocking
 
 
 class DataFactory(object):
@@ -41,20 +42,14 @@ class DataFactory(object):
 
     def _resource_data(self, pkg_id, records=None):
         '''
-        Returns a dictionary with some standard dictionary, including an
-        associated package ID. Records are optional.
+        Returns a dictionary with some standard data. Records are optional.
         :param pkg_id: The ID of the package to associate the resource to.
         :param records: Optionally, a list of records.
         :return: dict
         '''
-        resource = factories.Resource()
+        resource = factories.Resource(package_id=pkg_id)
         data = {
-            u'resource': {
-                u'id': resource[u'id'],
-                u'package_id': pkg_id,
-                u'name': u'Test records',
-                u'owner_org': self.org[u'id']
-                },
+            u'resource_id': resource[u'id'],
             u'fields': [{
                 u'id': u'common_name',
                 u'type': u'text'
@@ -171,6 +166,10 @@ class DataFactory(object):
         '''
         data = self._resource_data(pkg_id, records)
         toolkit.get_action(u'datastore_create')(self.context, data)
+        data[u'replace'] = True
+
+        with mocking.Patches.sync_queue():
+            toolkit.get_action(u'datastore_upsert')(self.context, data)
 
     def create(self):
         '''

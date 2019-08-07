@@ -4,5 +4,5 @@
 # This file is part of ckantest
 # Created by the Natural History Museum in London, UK
 
-from . import plugins
+from . import plugins, mocking
 from .config import Configurer

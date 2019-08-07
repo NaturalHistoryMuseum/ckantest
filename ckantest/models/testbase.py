@@ -8,9 +8,10 @@ import ckantest.factories
 import ckantest.helpers
 
 from ckan.tests import helpers
+from unittest import TestCase
 
 
-class TestBase(object):
+class TestBase(TestCase):
     '''
 
     '''
@@ -22,6 +23,7 @@ class TestBase(object):
         cls.app = helpers._get_test_app()
         cls.config = ckantest.helpers.Configurer(cls.app)
         cls.config.load_plugins(*cls.plugins)
+        cls._session = ckantest.helpers.mocking.session()
         cls._df = None
 
     @classmethod
