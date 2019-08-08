@@ -50,13 +50,6 @@ class DataFactory(object):
         resource = factories.Resource(package_id=pkg_id)
         data = {
             u'resource_id': resource[u'id'],
-            u'fields': [{
-                u'id': u'common_name',
-                u'type': u'text'
-                }, {
-                u'id': u'scientific_name',
-                u'type': u'text'
-                }],
             u'force': True
             }
         if records:
