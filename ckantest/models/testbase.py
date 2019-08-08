@@ -16,12 +16,12 @@ class TestBase(TestCase):
 
     '''
     plugins = []  # a list of plugin names to load
-    persist = {}  # config settings to maintain when resetting, e.g. 'myextension.debug': True
+    persist = {}  # config settings to maintain when resetting, e.g. {'myextension.debug': True}
 
     @classmethod
     def setup_class(cls):
         cls.app = helpers._get_test_app()
-        cls.config = ckantest.helpers.Configurer(cls.app)
+        cls.config = ckantest.helpers.Configurer(cls.app, cls.persist)
         cls.config.load_plugins(*cls.plugins)
         cls._session = ckantest.helpers.mocking.session()
         cls._df = None
@@ -29,14 +29,10 @@ class TestBase(TestCase):
     @classmethod
     def teardown_class(cls):
         cls.config.reset()
-        cls.config.update(cls.persist)
         if cls._df is None:
             helpers.reset_db()
         else:
             cls.data_factory().destroy()
-
-    def setup(self):
-        self.config.update(self.persist)
 
     @classmethod
     def data_factory(cls):

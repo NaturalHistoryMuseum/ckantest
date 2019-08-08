@@ -15,9 +15,9 @@ class Configurer(object):
     manipulating the current config within tests.
     '''
 
-    def __init__(self, app, debug=True):
+    def __init__(self, app, persist=None):
         self.app = app
-        self.debug = debug
+        self.persist = persist
         self.stored = None
         self._changed = {}
         self.store()
@@ -39,9 +39,10 @@ class Configurer(object):
 
     def reset(self):
         '''
-        Overwrites the current config with the stored config.
+        Overwrites the current config with the stored config, then reload the persistent settings.
         '''
         toolkit.config.update(self.stored)
+        self.update(self.persist)
 
     def update(self, new_values):
         '''
