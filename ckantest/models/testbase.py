@@ -20,9 +20,11 @@ class TestBase(TestCase):
 
     @classmethod
     def setup_class(cls):
-        cls.app = helpers._get_test_app()
-        cls.config = ckantest.helpers.Configurer(cls.app, cls.persist)
+        cls.config = ckantest.helpers.Configurer(cls.persist)
         cls.config.load_plugins(*cls.plugins)
+        cls.app = helpers._get_test_app()
+        cls.config.register_blueprints(cls.app)
+        cls.context = cls.app.flask_app.test_request_context()
         cls._session = ckantest.helpers.mocking.session()
         cls._df = None
 
@@ -37,5 +39,6 @@ class TestBase(TestCase):
     @classmethod
     def data_factory(cls):
         if cls._df is None:
-            cls._df = ckantest.factories.DataFactory()
+            with cls.context:
+                cls._df = ckantest.factories.DataFactory()
         return cls._df

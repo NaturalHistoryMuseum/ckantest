@@ -15,9 +15,9 @@ class Configurer(object):
     manipulating the current config within tests.
     '''
 
-    def __init__(self, app, persist=None):
-        self.app = app
+    def __init__(self, persist=None):
         self.persist = persist
+        self._blueprints = []
         self.stored = None
         self._changed = {}
         self.store()
@@ -80,13 +80,23 @@ class Configurer(object):
         del self._changed[key]
 
     def load_plugins(self, *plugin_names):
+        names = []
         for p in plugin_names:
-            if p == 'datastore':
+            if p == u'datastore':
                 p = load_datastore()
             else:
                 plugins.load(p)
+            names.append(p)
             plugin = plugins.get_plugin(p)
             if not hasattr(plugin, u'get_blueprint'):
                 continue
             for blueprint in plugin.get_blueprint():
-                self.app.flask_app.register_extension_blueprint(blueprint)
+                self._blueprints.append(blueprint)
+
+        # because apparently loading the plugin doesn't add it to the config
+        current_plugins = self.current.get(u'ckan.plugins', u'')
+        self.update({u'ckan.plugins': ' '.join([current_plugins] + names)})
+
+    def register_blueprints(self, app):
+        for blueprint in self._blueprints:
+            app.flask_app.register_extension_blueprint(blueprint)

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Bugfix 0.1.1
+- Moved blueprint registration out of `load_plugins` into its own method (`register_blueprints`) in `Configurer` as it's the only part that needs an `app`
+- Explicitly add plugins to `config['ckan.plugins']`
+- Config first, then create app, then register blueprints
+
 ## [0.1.0] - 2019-08-08
 _Initial release._
 
