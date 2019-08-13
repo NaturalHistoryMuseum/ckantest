@@ -29,5 +29,5 @@ _Initial release._
 
 
 
-[Unreleased]: https://github.com/olivierlacan/keep-a-changelog/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/olivierlacan/keep-a-changelog/releases/tag/v0.1.0
+[Unreleased]: https://github.com/NaturalHistoryMuseum/ckantest/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/NaturalHistoryMuseum/ckantest/releases/tag/v0.1.0
