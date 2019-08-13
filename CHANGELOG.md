@@ -1,10 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is (loosely) based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+_While this project is still in alpha, all the changes are going to be pushed directly to master, so 'unreleased' just means 'untagged'._
+
+### Bugfix 0.1.2
+- Unload plugins when resetting config
 
 ### Bugfix 0.1.1
 - Moved blueprint registration out of `load_plugins` into its own method (`register_blueprints`) in `Configurer` as it's the only part that needs an `app`

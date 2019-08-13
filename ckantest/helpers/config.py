@@ -18,6 +18,7 @@ class Configurer(object):
     def __init__(self, persist=None):
         self.persist = persist
         self._blueprints = []
+        self._plugins = []
         self.stored = None
         self._changed = {}
         self.store()
@@ -42,6 +43,8 @@ class Configurer(object):
         Overwrites the current config with the stored config, then reload the persistent settings.
         '''
         toolkit.config.update(self.stored)
+        for plugin in self._plugins:
+            plugins.unload(plugin)
         self.update(self.persist)
 
     def update(self, new_values):
@@ -80,13 +83,12 @@ class Configurer(object):
         del self._changed[key]
 
     def load_plugins(self, *plugin_names):
-        names = []
         for p in plugin_names:
             if p == u'datastore':
                 p = load_datastore()
             else:
                 plugins.load(p)
-            names.append(p)
+            self._plugins.append(p)
             plugin = plugins.get_plugin(p)
             if not hasattr(plugin, u'get_blueprint'):
                 continue
@@ -95,7 +97,7 @@ class Configurer(object):
 
         # because apparently loading the plugin doesn't add it to the config
         current_plugins = self.current.get(u'ckan.plugins', u'')
-        self.update({u'ckan.plugins': ' '.join([current_plugins] + names)})
+        self.update({u'ckan.plugins': ' '.join([current_plugins] + self._plugins)})
 
     def register_blueprints(self, app):
         for blueprint in self._blueprints:
