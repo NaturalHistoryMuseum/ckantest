@@ -4,14 +4,19 @@
 # This file is part of ckantest
 # Created by the Natural History Museum in London, UK
 
+import logging
+
 from ckan import plugins
+
+logger = logging.getLogger(u'ckantest')
 
 
 def load_datastore():
     try:
         plugins.load(u'datastore')
         return u'datastore'
-    except:
+    except Exception as e:
+        logger.debug('Couldn\'t load datastore: ' + str(e))
         plugins.unload(u'datastore')
         plugins.load(u'versioned_datastore')
         return u'versioned_datastore'
