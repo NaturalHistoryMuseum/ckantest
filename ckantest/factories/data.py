@@ -4,9 +4,10 @@
 # This file is part of ckantest
 # Created by the Natural History Museum in London, UK
 
+from ckantest.helpers import mocking
+
 from ckan.plugins import toolkit
 from ckan.tests import factories, helpers
-from ckantest.helpers import mocking
 
 
 class DataFactory(object):
@@ -17,153 +18,133 @@ class DataFactory(object):
     def __init__(self):
         self.sysadmin = None
         self.org = None
-        self.public_records = None
-        self.public_no_records = None
-        self.private_records = None
-        self.author = None
-        self.title = None
+        self.users = {}
+        self.orgs = {}
+        self.packages = {}
         self.refresh()
 
-    def _package_data(self, is_private=False):
-        '''
-        Returns a dictionary with some standard package metadata, with an
-        optional 'private' flag.
-        :param is_private: Whether the package should be private or not.
-        :return: dict
-        '''
-        return {
+    def package(self, name=None, context=None, **kwargs):
+        if name is None:
+            previous = [int(n.split('_')[-1]) for n in self.packages.keys() if
+                        n.startswith('test_package_')]
+            i = max(previous) + 1 if len(previous) > 0 else 1
+            name = 'test_package_' + str(i).zfill(3)
+        if name in self.packages:
+            raise KeyError('Duplicated key: ' + name)
+        data_dict = {
+            u'title': DataConstants.title_short,
+            u'name': name,
             u'notes': u'these are some notes',
             u'dataset_category': u'cat1',
-            u'author': self.author,
-            u'title': self.title,
-            u'private': is_private,
-            u'owner_org': self.org[u'id']
+            u'private': False,
+            u'owner_org': self.org[u'id'],
+            u'author': DataConstants.authors_short
             }
+        data_dict.update(kwargs)
+        if context is None:
+            package = factories.Dataset(**data_dict)
+        else:
+            package = toolkit.get_action(u'package_create')(context, data_dict)
+        self.packages[name] = package
+        self.activate_package(package[u'id'])
+        return package
 
-    def _resource_data(self, pkg_id, records=None):
-        '''
-        Returns a dictionary with some standard data. Records are optional.
-        :param pkg_id: The ID of the package to associate the resource to.
-        :param records: Optionally, a list of records.
-        :return: dict
-        '''
-        resource = factories.Resource(package_id=pkg_id)
-        data = {
+    def resource(self, package_id, context=None, **kwargs):
+        self.activate_package(package_id)
+        resource = factories.Resource(package_id=package_id)
+        data_dict = {
             u'resource_id': resource[u'id'],
             u'force': True
             }
-        if records:
-            data[u'records'] = records
-        return data
+        data_dict.update(kwargs)
+        toolkit.get_action(u'datastore_create')(context or self.context, data_dict)
+        data_dict[u'replace'] = True
+        with mocking.Patches.sync_queue():
+            toolkit.get_action(u'datastore_upsert')(context or self.context, data_dict)
+        self.reload_pkg_dicts()
+        return toolkit.get_action(u'package_show')(self.context, {u'id': package_id})
 
-    @property
-    def _records(self):
-        '''
-        A standard list of example records.
-        :return: list
-        '''
-        return [{
-            u'common_name': u'Egyptian vulture',
-            u'scientific_name': u'Neophron percnopterus'
-            }, {
-            u'common_name': u'Malabar squirrel',
-            u'scientific_name': u'Ratufa indica'
-            }, {
-            u'common_name': u'Screamer, crested',
-            u'scientific_name': u'Chauna torquata'
-            }, {
-            u'common_name': u'Heron, giant',
-            u'scientific_name': u'Ardea golieth'
-            }, {
-            u'common_name': u'Water monitor',
-            u'scientific_name': u'Varanus salvator'
-            }]
+    def organisation(self, name=None, **kwargs):
+        if name is None:
+            name = 'test_org_' + str(
+                max([int(n.split('_')[-1]) for n in self.orgs.keys()]) + 1).zfill(3)
+        if name in self.orgs:
+            raise KeyError('Duplicated key: ' + name)
+        data_dict = {
+            u'name': name,
+            }
+        data_dict.update(kwargs)
+        org = factories.Organization(**data_dict)
+        self.orgs[name] = org
+        return org
 
-    def long_title(self):
-        '''
-        Set the title to a long string, so any new packages that are created
-        use the long title.
-        '''
-        self.title = u"This is a very long package title that's going " \
-                     u'to make the tweet exceed 140 characters, ' \
-                     u'which would be a shame.'
+    def user(self, name=None, **kwargs):
+        if name is None:
+            name = 'test_user_' + str(
+                max([int(n.split('_')[-1]) for n in self.users.keys()]) + 1).zfill(3)
+        if name in self.users:
+            raise KeyError('Duplicated key: ' + name)
+        data_dict = {
+            u'name': name
+            }
+        data_dict.update(kwargs)
+        user = factories.User(**data_dict)
+        self.users[name] = user
+        return user
 
-    def long_author(self):
-        '''
-        Set the author to a long semicolon-delimited string, so any new
-        packages use this long author string.
-        '''
-        self.author = u'Waylon Dalton; Justine Henderson; ' \
-                      u'Abdullah Lang; Marcus Cruz; Thalia Cobb; ' \
-                      u'Mathias Little; Eddie Randolph; ' \
-                      u'Angela Walker; Lia Shelton; Hadassah Hartman; ' \
-                      u'Joanna Shaffer; Jonathon Sheppard'
-
-    def deactivate_package(self, pkg_id):
+    def deactivate_package(self, package_id):
         '''
         Sets a package's state to 'inactive'. Reloads all the internal package
         dictionaries afterwards so they are up-to-date.
-        :param pkg_id: The package to deactivate.
+        :param package_id: The package to deactivate.
         '''
         pkg_dict = toolkit.get_action(u'package_show')(self.context, {
-            u'id': pkg_id
+            u'id': package_id
             })
         pkg_dict[u'state'] = u'inactive'
         toolkit.get_action(u'package_update')(self.context, pkg_dict)
         self.reload_pkg_dicts()
 
-    def activate_package(self, pkg_id):
+    def activate_package(self, package_id):
         '''
         Sets a package's state to 'active'. Reloads all the internal package
         dictionaries afterwards so they are up-to-date.
-        :param pkg_id: The package to activate.
+        :param package_id: The package to activate.
         '''
         pkg_dict = toolkit.get_action(u'package_show')(self.context, {
-            u'id': pkg_id
+            u'id': package_id
             })
         pkg_dict[u'state'] = u'active'
         toolkit.get_action(u'package_update')(self.context, pkg_dict)
         self.reload_pkg_dicts()
 
-    def remove_public_resources(self):
+    def remove_resources(self, package_name):
         '''
-        Delete all resources from the public_records package defined in this
-        class. Reloads all the internal package dictionaries afterwards so
-        they are up-to-date.
+        Delete all resources from the specified package. Reloads the internal package dictionary
+        afterwards.
         '''
-        for r in self.public_records[u'resources']:
+        for r in self.packages[package_name].get(u'resources', []):
             toolkit.get_action(u'resource_delete')(self.context, {
                 u'id': r[u'id']
                 })
-        self.reload_pkg_dicts()
+        self.packages[package_name] = toolkit.get_action(u'package_show')(self.context, {
+            u'id': self.packages[package_name][u'id']
+            })
 
-    def deactivate_public_resources(self):
+    def deactivate_resources(self, package_name):
         '''
         Does not make any actual database changes - makes a copy of the
-        current public_records package dictionary and mocks deactivating all
+        current specified package dictionary and mocks deactivating all
         its resources by setting their states to 'draft'. Returns this mock
         dictionary.
         :return: dict
         '''
-        pkg_dict = self.public_records.copy()
+        pkg_dict = self.packages[package_name].copy()
         resources_dict = pkg_dict[u'resources']
         for r in resources_dict:
             r[u'state'] = u'draft'
         pkg_dict[u'resources'] = resources_dict
         return pkg_dict
-
-    def _make_resource(self, pkg_id, records=None):
-        '''
-        Creates a resource in the datastore.
-        :param pkg_id: The package ID to associate the resource with.
-        :param records: Records to add to the resource, if any.
-        '''
-        data = self._resource_data(pkg_id, records)
-        toolkit.get_action(u'datastore_create')(self.context, data)
-        data[u'replace'] = True
-
-        with mocking.Patches.sync_queue():
-            toolkit.get_action(u'datastore_upsert')(self.context, data)
 
     def create(self):
         '''
@@ -172,16 +153,6 @@ class DataFactory(object):
         '''
         self.sysadmin = factories.Sysadmin()
         self.org = factories.Organization()
-        self.public_records = factories.Dataset(**self._package_data())
-        self._make_resource(self.public_records[u'id'], self._records)
-
-        self.public_no_records = factories.Dataset(**self._package_data())
-        self._make_resource(self.public_no_records[u'id'])
-
-        self.private_records = \
-            factories.Dataset(**self._package_data(True))
-        self._make_resource(self.private_records[u'id'], self._records)
-
         self.reload_pkg_dicts()
 
     def destroy(self):
@@ -190,8 +161,11 @@ class DataFactory(object):
         e.g. title string.
         '''
         helpers.reset_db()
-        self.author = u'Test Author'
-        self.title = u'A test package'
+        self.sysadmin = None
+        self.org = None
+        self.users = {}
+        self.orgs = {}
+        self.packages = {}
 
     def refresh(self):
         '''
@@ -220,12 +194,40 @@ class DataFactory(object):
         Refreshes the package information from the database for each of the
         class' defined packages.
         '''
-        self.public_records = toolkit.get_action(u'package_show')(self.context, {
-            u'id': self.public_records[u'id']
-            })
-        self.public_no_records = toolkit.get_action(u'package_show')(self.context, {
-            u'id': self.public_no_records[u'id']
-            })
-        self.private_records = toolkit.get_action(u'package_show')(self.context, {
-            u'id': self.private_records[u'id']
-            })
+        package_show = toolkit.get_action(u'package_show')
+        self.packages = {name: package_show(self.context, {
+            u'id': data[u'id']
+            }) for name, data in self.packages.items()}
+
+
+class DataConstants(object):
+    title_long = u'This is a very long package title that is going to be approximately ' \
+                 u'two hundred characters long by the time it is finished. It is being ' \
+                 u'used to test extensions for CKAN as part of the ckantest package.'
+    title_short = u'A test package'
+
+    authors_long = u'Waylon Dalton; Justine Henderson; ' \
+                   u'Abdullah Lang; Marcus Cruz; Thalia Cobb; ' \
+                   u'Mathias Little; Eddie Randolph; ' \
+                   u'Angela Walker; Lia Shelton; Hadassah Hartman; ' \
+                   u'Joanna Shaffer; Jonathon Sheppard'
+    authors_long_first = u'Dalton'
+    authors_short = u'Test Author'
+    authors_short_first = u'Author'
+
+    records = [{
+        u'common_name': u'Egyptian vulture',
+        u'scientific_name': u'Neophron percnopterus'
+        }, {
+        u'common_name': u'Malabar squirrel',
+        u'scientific_name': u'Ratufa indica'
+        }, {
+        u'common_name': u'Screamer, crested',
+        u'scientific_name': u'Chauna torquata'
+        }, {
+        u'common_name': u'Heron, giant',
+        u'scientific_name': u'Ardea golieth'
+        }, {
+        u'common_name': u'Water monitor',
+        u'scientific_name': u'Varanus salvator'
+        }]
