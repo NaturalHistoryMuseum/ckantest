@@ -20,6 +20,7 @@ class Configurer(object):
         self._blueprints = []
         self._plugins = []
         self.stored = None
+        self._soft_store = None
         self._changed = {}
         self.store()
         self.reset()
@@ -44,7 +45,8 @@ class Configurer(object):
         '''
         toolkit.config.update(self.stored)
         for plugin in self._plugins:
-            plugins.unload(plugin)
+            if plugins.plugin_loaded(plugin):
+                plugins.unload(plugin)
         self.update(self.persist)
 
     def update(self, new_values):
@@ -98,7 +100,16 @@ class Configurer(object):
         # because apparently loading the plugin doesn't add it to the config
         current_plugins = self.current.get(u'ckan.plugins', u'')
         self.update({u'ckan.plugins': ' '.join([current_plugins] + self._plugins)})
+        self._soft_store = self.current.copy()
 
     def register_blueprints(self, app):
         for blueprint in self._blueprints:
             app.flask_app.register_extension_blueprint(blueprint)
+
+    def soft_reset(self):
+        '''
+        Reset without unloading plugins.
+        :return:
+        '''
+        toolkit.config.update(self._soft_store)
+        self.update(self.persist)
