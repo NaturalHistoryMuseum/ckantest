@@ -28,3 +28,10 @@ class Patches(object):
 
         return mock.patch('ckan.plugins.toolkit.enqueue_job',
                           side_effect=_synchronous_enqueue_job)
+
+
+class SimpleMock(object):
+    '''A really basic mock class that just implements the attributes passed to it.'''
+    def __init__(self, **k):
+        for i in k:
+            setattr(self, i, k[i])
