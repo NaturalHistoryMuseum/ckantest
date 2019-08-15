@@ -5,6 +5,7 @@
 # Created by the Natural History Museum in London, UK
 
 from ckantest.helpers import mocking
+from ckantest.helpers.containers import Packages
 
 from ckan.plugins import toolkit
 from ckan.tests import factories, helpers
@@ -20,7 +21,7 @@ class DataFactory(object):
         self.org = None
         self.users = {}
         self.orgs = {}
-        self.packages = {}
+        self.packages = Packages()
         self.refresh()
 
     def package(self, name=None, context=None, **kwargs):
@@ -46,23 +47,30 @@ class DataFactory(object):
         else:
             package = toolkit.get_action(u'package_create')(context, data_dict)
         self.packages[name] = package
-        self.activate_package(package[u'id'])
+        self.activate_package(package[u'id'], context=context)
         return package
 
     def resource(self, package_id, context=None, **kwargs):
-        self.activate_package(package_id)
-        resource = factories.Resource(package_id=package_id)
+        data_dict = {
+            u'package_id': package_id,
+            u'url': u'http://placekitten.com/200/300'
+            }
+        data_dict.update(kwargs)
+        if context is None:
+            resource = factories.Resource(**data_dict)
+        else:
+            resource = toolkit.get_action(u'resource_create')(context, data_dict)
+
+        self.activate_package(package_id, context=context)
         data_dict = {
             u'resource_id': resource[u'id'],
             u'force': True
             }
-        data_dict.update(kwargs)
         toolkit.get_action(u'datastore_create')(context or self.context, data_dict)
         data_dict[u'replace'] = True
         with mocking.Patches.sync_queue():
             toolkit.get_action(u'datastore_upsert')(context or self.context, data_dict)
-        self.reload_pkg_dicts()
-        return toolkit.get_action(u'package_show')(self.context, {u'id': package_id})
+        return resource
 
     def organisation(self, name=None, **kwargs):
         if name is None:
@@ -92,42 +100,37 @@ class DataFactory(object):
         self.users[name] = user
         return user
 
-    def deactivate_package(self, package_id):
+    def deactivate_package(self, package_id, context=None):
         '''
-        Sets a package's state to 'inactive'. Reloads all the internal package
-        dictionaries afterwards so they are up-to-date.
+        Sets a package's state to 'inactive'.
         :param package_id: The package to deactivate.
         '''
-        pkg_dict = toolkit.get_action(u'package_show')(self.context, {
+        pkg_dict = toolkit.get_action(u'package_show')(context or self.context, {
             u'id': package_id
             })
         pkg_dict[u'state'] = u'inactive'
-        toolkit.get_action(u'package_update')(self.context, pkg_dict)
-        self.reload_pkg_dicts()
+        toolkit.get_action(u'package_update')(context or self.context, pkg_dict)
 
-    def activate_package(self, package_id):
+    def activate_package(self, package_id, context=None):
         '''
-        Sets a package's state to 'active'. Reloads all the internal package
-        dictionaries afterwards so they are up-to-date.
+        Sets a package's state to 'active'.
         :param package_id: The package to activate.
         '''
-        pkg_dict = toolkit.get_action(u'package_show')(self.context, {
+        pkg_dict = toolkit.get_action(u'package_show')(context or self.context, {
             u'id': package_id
             })
         pkg_dict[u'state'] = u'active'
-        toolkit.get_action(u'package_update')(self.context, pkg_dict)
-        self.reload_pkg_dicts()
+        toolkit.get_action(u'package_update')(context or self.context, pkg_dict)
 
-    def remove_resources(self, package_name):
+    def remove_resources(self, package_name, context=None):
         '''
-        Delete all resources from the specified package. Reloads the internal package dictionary
-        afterwards.
+        Delete all resources from the specified package.
         '''
         for r in self.packages[package_name].get(u'resources', []):
-            toolkit.get_action(u'resource_delete')(self.context, {
+            toolkit.get_action(u'resource_delete')(context or self.context, {
                 u'id': r[u'id']
                 })
-        self.packages[package_name] = toolkit.get_action(u'package_show')(self.context, {
+        self.packages[package_name] = toolkit.get_action(u'package_show')(context or self.context, {
             u'id': self.packages[package_name][u'id']
             })
 
@@ -153,7 +156,6 @@ class DataFactory(object):
         '''
         self.sysadmin = factories.Sysadmin()
         self.org = factories.Organization()
-        self.reload_pkg_dicts()
 
     def destroy(self):
         '''
@@ -165,7 +167,7 @@ class DataFactory(object):
         self.org = None
         self.users = {}
         self.orgs = {}
-        self.packages = {}
+        self.packages = Packages()
 
     def refresh(self):
         '''
@@ -188,16 +190,6 @@ class DataFactory(object):
         # to fix an issue in ckanext-harvest (commit f315f41)
         context.pop(u'__auth_audit', None)
         return context
-
-    def reload_pkg_dicts(self):
-        '''
-        Refreshes the package information from the database for each of the
-        class' defined packages.
-        '''
-        package_show = toolkit.get_action(u'package_show')
-        self.packages = {name: package_show(self.context, {
-            u'id': data[u'id']
-            }) for name, data in self.packages.items()}
 
 
 class DataConstants(object):
