@@ -4,11 +4,15 @@
 # This file is part of ckantest
 # Created by the Natural History Museum in London, UK
 
+import logging
+
 from ckantest.helpers import mocking
 from ckantest.helpers.containers import Packages
 
 from ckan.plugins import toolkit
 from ckan.tests import factories, helpers
+
+logger = logging.getLogger(u'ckantest')
 
 
 class DataFactory(object):
@@ -17,11 +21,13 @@ class DataFactory(object):
     '''
 
     def __init__(self):
+        # defining attribute names
         self.sysadmin = None
         self.org = None
-        self.users = {}
-        self.orgs = {}
-        self.packages = Packages()
+        self.users = None
+        self.orgs = None
+        self.packages = None
+        # this actually sets them properly (so they can be reset as needed)
         self.refresh()
 
     def package(self, name=None, context=None, **kwargs):
@@ -43,8 +49,10 @@ class DataFactory(object):
             }
         data_dict.update(kwargs)
         if context is None:
+            logger.debug(u'Creating dataset "{0}" as sysadmin...'.format(name))
             package = factories.Dataset(**data_dict)
         else:
+            logger.debug(u'Creating dataset "{0}" as user {1}...'.format(name, context[u'user']))
             package = toolkit.get_action(u'package_create')(context, data_dict)
         self.packages[name] = package
         self.activate_package(package[u'id'], context=context)
@@ -57,8 +65,10 @@ class DataFactory(object):
             }
         data_dict.update(kwargs)
         if context is None:
+            logger.debug(u'Creating resource as sysadmin...')
             resource = factories.Resource(**data_dict)
         else:
+            logger.debug(u'Creating resource as user {0}...'.format(context[u'user']))
             resource = toolkit.get_action(u'resource_create')(context, data_dict)
 
         self.activate_package(package_id, context=context)
@@ -66,10 +76,12 @@ class DataFactory(object):
             u'resource_id': resource[u'id'],
             u'force': True
             }
-        toolkit.get_action(u'datastore_create')(context or self.context, data_dict)
+        use_context = context or self.context
+        logger.debug(u'Adding resource to datastore as user {0}...'.format(use_context[u'user']))
+        toolkit.get_action(u'datastore_create')(use_context, data_dict)
         data_dict[u'replace'] = True
         with mocking.Patches.sync_queue():
-            toolkit.get_action(u'datastore_upsert')(context or self.context, data_dict)
+            toolkit.get_action(u'datastore_upsert')(use_context, data_dict)
         return resource
 
     def organisation(self, name=None, **kwargs):
@@ -82,6 +94,7 @@ class DataFactory(object):
             u'name': name,
             }
         data_dict.update(kwargs)
+        logger.debug(u'Creating organisation "{0}" as sysadmin...'.format(name))
         org = factories.Organization(**data_dict)
         self.orgs[name] = org
         return org
@@ -96,6 +109,7 @@ class DataFactory(object):
             u'name': name
             }
         data_dict.update(kwargs)
+        logger.debug(u'Creating user "{0}" as sysadmin...'.format(name))
         user = factories.User(**data_dict)
         self.users[name] = user
         return user
@@ -109,7 +123,10 @@ class DataFactory(object):
             u'id': package_id
             })
         pkg_dict[u'state'] = u'inactive'
-        toolkit.get_action(u'package_update')(context or self.context, pkg_dict)
+        use_context = context or self.context
+        logger.debug(u'Deactivating package {0} as user {1}...'.format(pkg_dict[u'name'],
+                                                                       use_context[u'user']))
+        toolkit.get_action(u'package_update')(use_context, pkg_dict)
 
     def activate_package(self, package_id, context=None):
         '''
@@ -120,7 +137,10 @@ class DataFactory(object):
             u'id': package_id
             })
         pkg_dict[u'state'] = u'active'
-        toolkit.get_action(u'package_update')(context or self.context, pkg_dict)
+        use_context = context or self.context
+        logger.debug(u'Activating package {0} as user {1}...'.format(pkg_dict[u'name'],
+                                                                     use_context[u'user']))
+        toolkit.get_action(u'package_update')(use_context, pkg_dict)
 
     def remove_resources(self, package_name, context=None):
         '''
