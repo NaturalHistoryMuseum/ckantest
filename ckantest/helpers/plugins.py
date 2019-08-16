@@ -14,13 +14,13 @@ logger = logging.getLogger(u'ckantest')
 def load_datastore():
     try:
         plugins.load(u'datastore')
-        logger.debug('Loaded datastore.')
+        logger.debug(u'Loaded datastore.')
         return u'datastore'
     except Exception as e:
-        logger.debug('Couldn\'t load datastore: ' + str(e))
+        logger.debug(u'Couldn\'t load datastore: ' + str(e))
         plugins.unload(u'datastore')
         plugins.load(u'versioned_datastore')
-        logger.debug('Loaded versioned datastore.')
+        logger.debug(u'Loaded versioned datastore.')
         return u'versioned_datastore'
 
 

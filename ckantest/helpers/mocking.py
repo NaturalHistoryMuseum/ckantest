@@ -26,7 +26,7 @@ class Patches(object):
             job_func(*args, **kwargs)
             return mock.MagicMock()
 
-        return mock.patch('ckan.plugins.toolkit.enqueue_job',
+        return mock.patch(u'ckan.plugins.toolkit.enqueue_job',
                           side_effect=_synchronous_enqueue_job)
 
 

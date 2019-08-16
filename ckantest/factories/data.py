@@ -26,12 +26,12 @@ class DataFactory(object):
 
     def package(self, name=None, context=None, **kwargs):
         if name is None:
-            previous = [int(n.split('_')[-1]) for n in self.packages.keys() if
-                        n.startswith('test_package_')]
+            previous = [int(n.split(u'_')[-1]) for n in self.packages.keys() if
+                        n.startswith(u'test_package_')]
             i = max(previous) + 1 if len(previous) > 0 else 1
-            name = 'test_package_' + str(i).zfill(3)
+            name = u'test_package_' + str(i).zfill(3)
         if name in self.packages:
-            raise KeyError('Duplicated key: ' + name)
+            raise KeyError(u'Duplicated key: ' + name)
         data_dict = {
             u'title': DataConstants.title_short,
             u'name': name,
@@ -74,10 +74,10 @@ class DataFactory(object):
 
     def organisation(self, name=None, **kwargs):
         if name is None:
-            name = 'test_org_' + str(
-                max([int(n.split('_')[-1]) for n in self.orgs.keys()]) + 1).zfill(3)
+            name = u'test_org_' + str(
+                max([int(n.split(u'_')[-1]) for n in self.orgs.keys()]) + 1).zfill(3)
         if name in self.orgs:
-            raise KeyError('Duplicated key: ' + name)
+            raise KeyError(u'Duplicated key: ' + name)
         data_dict = {
             u'name': name,
             }
@@ -88,10 +88,10 @@ class DataFactory(object):
 
     def user(self, name=None, **kwargs):
         if name is None:
-            name = 'test_user_' + str(
-                max([int(n.split('_')[-1]) for n in self.users.keys()]) + 1).zfill(3)
+            name = u'test_user_' + str(
+                max([int(n.split(u'_')[-1]) for n in self.users.keys()]) + 1).zfill(3)
         if name in self.users:
-            raise KeyError('Duplicated key: ' + name)
+            raise KeyError(u'Duplicated key: ' + name)
         data_dict = {
             u'name': name
             }

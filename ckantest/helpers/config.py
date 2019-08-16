@@ -99,7 +99,7 @@ class Configurer(object):
 
         # because apparently loading the plugin doesn't add it to the config
         current_plugins = self.current.get(u'ckan.plugins', u'')
-        self.update({u'ckan.plugins': ' '.join([current_plugins] + self._plugins)})
+        self.update({u'ckan.plugins': u' '.join([current_plugins] + self._plugins)})
         self._soft_store = self.current.copy()
 
     def register_blueprints(self, app):
