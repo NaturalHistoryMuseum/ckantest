@@ -60,7 +60,7 @@ class Configurer(object):
                 self._changed[key] = toolkit.config.get(key, None)
             toolkit.config[key] = value
 
-    def remove(self, keys):
+    def remove(self, *keys):
         '''
         Removes a list of keys from the config, but stores their old values
         first in case they need to be restored.

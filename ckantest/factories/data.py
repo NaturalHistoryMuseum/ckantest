@@ -58,7 +58,7 @@ class DataFactory(object):
         self.activate_package(package[u'id'], context=context)
         return package
 
-    def resource(self, package_id, context=None, **kwargs):
+    def resource(self, package_id, context=None, records=[], **kwargs):
         data_dict = {
             u'package_id': package_id,
             u'url': u'http://placekitten.com/200/300'
@@ -74,7 +74,8 @@ class DataFactory(object):
         self.activate_package(package_id, context=context)
         data_dict = {
             u'resource_id': resource[u'id'],
-            u'force': True
+            u'force': True,
+            u'records': records
             }
         use_context = context or self.context
         logger.debug(u'Adding resource to datastore as user {0}...'.format(use_context[u'user']))
