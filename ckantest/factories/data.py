@@ -22,8 +22,8 @@ class DataFactory(object):
 
     def __init__(self):
         # defining attribute names
-        self.sysadmin = None
-        self.org = None
+        self._sysadmin = None
+        self._org = None
         self.users = None
         self.orgs = None
         self.packages = None
@@ -172,11 +172,8 @@ class DataFactory(object):
 
     def create(self):
         '''
-        Runs all the creation functions in the class, e.g. creating a test
-        org and test datasets.
+        Runs any necessary creation functions.
         '''
-        self.sysadmin = factories.Sysadmin()
-        self.org = factories.Organization()
 
     def destroy(self):
         '''
@@ -184,8 +181,8 @@ class DataFactory(object):
         e.g. title string.
         '''
         helpers.reset_db()
-        self.sysadmin = None
-        self.org = None
+        self._sysadmin = None
+        self._org = None
         self.users = {}
         self.orgs = {}
         self.packages = Packages()
@@ -211,6 +208,18 @@ class DataFactory(object):
         # to fix an issue in ckanext-harvest (commit f315f41)
         context.pop(u'__auth_audit', None)
         return context
+
+    @property
+    def sysadmin(self):
+        if self._sysadmin is None:
+            self._sysadmin = factories.Sysadmin()
+        return self._sysadmin
+
+    @property
+    def org(self):
+        if self._org is None:
+            self._org = factories.Organization()
+        return self._org
 
 
 class DataConstants(object):
