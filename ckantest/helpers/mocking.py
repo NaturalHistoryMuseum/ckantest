@@ -35,3 +35,8 @@ class SimpleMock(object):
     def __init__(self, **k):
         for i in k:
             setattr(self, i, k[i])
+
+
+class Response(mock.MagicMock):
+    def raise_for_status(self):
+        pass
