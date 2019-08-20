@@ -30,7 +30,7 @@ class DataFactory(object):
         # this actually sets them properly (so they can be reset as needed)
         self.refresh()
 
-    def package(self, name=None, context=None, **kwargs):
+    def package(self, name=None, context=None, activate=True, **kwargs):
         if name is None:
             previous = [int(n.split(u'_')[-1]) for n in self.packages.keys() if
                         n.startswith(u'test_package_')]
@@ -55,10 +55,11 @@ class DataFactory(object):
             logger.debug(u'Creating dataset "{0}" as user {1}...'.format(name, context[u'user']))
             package = toolkit.get_action(u'package_create')(context, data_dict)
         self.packages[name] = package
-        self.activate_package(package[u'id'], context=context)
+        if activate:
+            self.activate_package(package[u'id'], context=context)
         return package
 
-    def resource(self, package_id, context=None, records=[], **kwargs):
+    def resource(self, package_id, context=None, records=None, activate=True, **kwargs):
         data_dict = {
             u'package_id': package_id,
             u'url': u'http://placekitten.com/200/300'
@@ -71,18 +72,20 @@ class DataFactory(object):
             logger.debug(u'Creating resource as user {0}...'.format(context[u'user']))
             resource = toolkit.get_action(u'resource_create')(context, data_dict)
 
-        self.activate_package(package_id, context=context)
-        data_dict = {
-            u'resource_id': resource[u'id'],
-            u'force': True,
-            u'records': records
-            }
-        use_context = context or self.context
-        logger.debug(u'Adding resource to datastore as user {0}...'.format(use_context[u'user']))
-        toolkit.get_action(u'datastore_create')(use_context, data_dict)
-        data_dict[u'replace'] = True
-        with mocking.Patches.sync_queue():
-            toolkit.get_action(u'datastore_upsert')(use_context, data_dict)
+        if activate:
+            self.activate_package(package_id, context=context)
+            data_dict = {
+                u'resource_id': resource[u'id'],
+                u'force': True
+                }
+            if records:
+                data_dict[u'records'] = records
+            use_context = context or self.context
+            logger.debug(u'Adding resource to datastore as user {0}...'.format(use_context[u'user']))
+            toolkit.get_action(u'datastore_create')(use_context, data_dict)
+            data_dict[u'replace'] = True
+            with mocking.Patches.sync_queue():
+                toolkit.get_action(u'datastore_upsert')(use_context, data_dict)
         return resource
 
     def organisation(self, name=None, **kwargs):
