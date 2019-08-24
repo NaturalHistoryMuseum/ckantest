@@ -42,3 +42,25 @@ class TestBase(TestCase):
             with cls.context:
                 cls._df = ckantest.factories.DataFactory()
         return cls._df
+
+    def api_request(self, action, params=None, method='get'):
+        '''Helper method to submit a request to the API.
+
+        :param action: the name of the api action to be called, e.g. package_create
+        :type action: str
+        :param params: additional parameters to submit
+        :type params: dict
+
+        '''
+
+        url = str('/api/3/action/{0}'.format(action))
+
+        try:
+            _request = getattr(self.app, method.lower())
+        except AttributeError:
+            _request = self.app.get
+
+        response = _request(url, params=params, headers={
+            'Authorization': str(self.data_factory().sysadmin[u'apikey'])
+            })
+        return response.json
